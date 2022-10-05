@@ -1,68 +1,101 @@
 import React, { useRef, useState } from 'react'
+import TodoList from './TodoList'
+import TodoWrite from './TodoWrite'
+import { Link, NavLink, Route, Routes, useNavigate } from 'react-router-dom'
 
 const App = () => {
-  const [todo, setTodo] = useState({})
-  const [todolist, setTodolist] = useState([])
-  const num = useRef(1) //id값을 ref를 써서 집어넣음 변경값을 계속 마운트 할 필요 없으니까
-  const handlerInput = (e) => {
-    const { name, value } = e.target
-    setTodo({
-      ...todo,
+  const [word, setWord] = useState({})
+  //같은 값을 넣으면 state가 변경되지 않으니까 num이 변하지 않는다.
+  const [list, setList] = useState([])
+  const num = useRef(1)
+  const inputTitle = useRef()
+  const inputContent = useRef()
+
+  const navi = useNavigate()
+
+  const handlerWord = (e) => {
+    const { name, value } = e.target;
+    //비구조할당
+    setWord({
+      ...word,
       [name]: value,
-      id: num.current,
-      done: false,
+      id: num.current
     })
-    // setTodo({ ...todo, [e.target.name]: e.target.value })
   }
 
-  const handleList = (e) => {
-    if (todo.content.length < 5) {
-      alert("내용은 5자 이상 쓰세요")
+  const handleList = () => {
+
+    if (!word.title || !word.content) {
+      alert('내용을 입력하세요')
       return
     }
-    setTodolist([...todolist, todo])
-    setTodo({
+
+
+    const hg = /^[ㄱ-ㅎ가-힣]*$/
+
+    if (!hg.test(word.title)) {
+      alert('한글만 입력하세요')
+      //1. 입력창을 비운다.
+      setWord({
+        ...word,
+        title: ""
+      })
+      //2. 그 입력창에 포커스를 준다.
+      inputTitle.current.focus()
+
+      return
+    }
+
+    if (word.title.length < 5) {
+      alert('5자 이상 쓰세요')
+      //1. 입력창을 비운다.
+      setWord({
+        ...word,
+        title: ""
+      })
+      // word.title = word.title.replace(word.title, "")
+      //2. 그 입력창에 포커스를 준다.
+      inputTitle.current.focus()
+
+      return
+    }
+
+    if (word.content.length < 8) {
+      alert('8자 이상 쓰세요')
+      //1. 입력창을 비운다.
+      setWord({
+        ...word,
+        content: ""
+      })
+      //2. 그 입력창에 포커스를 준다.
+      inputContent.current.focus()
+
+      return
+    }
+
+    setList([...list, word])
+    // 원본 배열을 고치지말고  ...list로 카피해서 변경해서 불변성을 유지해야한다.
+    setWord({
       title: "",
       content: ""
     })
-
+    //setWord는 입력폼에 입력 후 안사라지는 정보들을 지워줌
     num.current++
-  }
-
-  const deleteList = (el) => {
-    setTodolist(todolist.filter(it => it.id !== el.id))
-    num.current--
-  }
-
-  const handlerModify = (id) => {
-    setTodolist(todolist.map(it => (
-      it.id === id
-        ? {
-          ...it,
-          done: !it.done
-        }
-        : it
-    )))
+    navi("/")
   }
 
   return (
     <div>
-      <ul>
-        {
-          todolist.map((el, idx) => {
-            return (
-              <li key={el.id} className={el.done ? "on" : ""}>
-                <input type="checkbox" onChange={() => handlerModify(el.id)} />
-                {el.id} 제목 : {el.title} <br></br> 내용 : {el.content}
-                <button onClick={() => deleteList(el)}>삭제</button></li>
-            )
-          })
-        }
-      </ul>
-
-      제목<input type="text" required onChange={handlerInput} name='title' value={todo.title || ""} />
-      내용<input type="text" required onChange={handlerInput} name='content' value={todo.content || ""} />
-      <button onClick={handleList}>입력</button>
+      <nav>
+        <NavLink to='/'>Home</NavLink>
+        <NavLink to='/Board'>Board</NavLink>
+        <NavLink to='/Write'>Write</NavLink>
+      </nav>
+      <Routes>
+        <Route path="/" element={<TodoList list={list} setList={setList} />} />
+        <Route path="/Board" element={<TodoList list={list} setList={setList} />} />
+        <Route path="/Write" element={<TodoWrite inputTitle={inputTitle} inputContent={inputContent} handlerWord={handlerWord} handleList={handleList} word={word} />} />
+      </Routes>
     </div>
   )
 }
